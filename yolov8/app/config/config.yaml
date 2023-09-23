@@ -1,0 +1,22 @@
+sftp:
+  host: "172.16.0.171"
+  username: "aditya.singh"
+  port: 22
+  password: "Welcome#123"
+  path: "/models" 
+apis:
+  container: "http://127.0.0.1:8000/container"
+  container_model: "http://127.0.0.1:8000/containermodel"
+  update_endpoint: "http://127.0.0.1:8000/updateEndpoint"
+  model_master_config: "http://127.0.0.1:8000/getModelMasterbyId"
+  model_config: "http://127.0.0.1:8000/getModelConfigbyId"
+# minio:
+#   endpoint: 172.16.0.178:9000
+#   secret_key: s8YRgOAnwmT3X3OWBSxcJYIViSDE65uIedB4fLsB
+#   access_key: C3dkhEzuNU0JPt3UEwSN
+#   secure: False
+minio:
+  endpoint: 172.16.0.170:9000
+  secret_key: yMHbGFngNM5OnuWFj5lUDBJozEjryGAPBeF34WuG
+  access_key: R8mQTw7uevt178G216KM
+  secure: False
