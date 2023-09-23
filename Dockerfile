@@ -24,7 +24,7 @@ Run pip install protobuf==3.20.*
 Run pip install ipython
 Run pip install psutil
 Run pip install minio
-copy app /app
+copy yolov8/app /app
 WORKDIR /app
 # RUN mkdir /app/logs
 cmd ["python","app.py"]
