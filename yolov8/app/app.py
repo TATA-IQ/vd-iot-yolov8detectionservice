@@ -125,7 +125,7 @@ class SetupModel():
             "http://"
             + ip
             + ":"
-            + self.modelconf["port"]
+            + str(self.modelconf["port"])
             + "/detect"
         )
         
