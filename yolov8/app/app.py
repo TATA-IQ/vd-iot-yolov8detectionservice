@@ -123,7 +123,7 @@ class SetupModel():
         ip = self.get_local_ip()
         url = (
             "http://"
-            + ip
+            + str(ip)
             + ":"
             + str(self.modelconf["port"])
             + "/detect"
