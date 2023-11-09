@@ -16,7 +16,7 @@ apis:
 #   access_key: 6uYsllVhmjkWALUCR5uD
 #   secure: False
 minio:
-  endpoint: http://10.0.153.141:9000
+  endpoint: 10.0.153.141:9000
   secret_key: fz7x9AcpZqB7YY0VxgiQAYtC4RZVPSaumQycHPrP
   access_key: BIVeLI5sayqshgRWSm5H
   secure: False
