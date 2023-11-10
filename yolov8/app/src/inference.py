@@ -11,6 +11,84 @@ import torch
 from ultralytics import YOLO
 
 
+class ImageSplit():
+    def __init__(self):
+        pass
+    
+    def mark_res(self,res,origin_y,origin_x,H,W):
+        listresult=[]
+        for i,det in enumerate(res[0].boxes):
+            print(det.data[0])
+            listresult.append({
+                "class": int(det.data[0][5].numpy()),
+                "id":None,
+                "class_name": model.names[int(det.data[0][5].numpy())],
+                "score":round(float(det.data[0][4].numpy()), 2),
+                "xmin": int(det.data[0][0].numpy()) + origin_x,
+                "ymin": int(det.data[0][1].numpy()) + origin_y,
+                "xmax": int(det.data[0][2].numpy()) + origin_x,
+                "ymax": int(det.data[0][3].numpy()) + origin_y,
+                "xmin_c": round((int(det.data[0][0].numpy()) + origin_x)/W,5),
+                "ymin_c": round((int(det.data[0][1].numpy()) + origin_y)/H,5),
+                "xmax_c": round((int(det.data[0][2].numpy()) + origin_x)/W,5),
+                "ymax_c": round((int(det.data[0][3].numpy()) + origin_y)/H,5),  
+
+            })
+        return listresult
+    def deduplication(self,det_list, h,w):
+        H = h
+        W = w
+        final_det = []
+        clist_i = []
+        for i in range(0, len(det_list)):
+            for j in range(i+1, len(det_list)):
+                if(i not in clist_i and (det_list[i][0]['class'] == det_list[j][0]['class']) and 
+                   (((abs(det_list[i][0]['xmin'] - det_list[j][0]['xmax']) <= 5 or abs(det_list[i][0]['xmax'] - det_list[j][0]['xmin']) <= 5) and 
+                   ((det_list[i][0]['ymax']-det_list[j][0]['ymin'])/(det_list[j][0]['ymax']-det_list[j][0]['ymin']) > 0.5 and
+                    (det_list[j][0]['ymax']-det_list[i][0]['ymin'])/(det_list[i][0]['ymax']-det_list[i][0]['ymin']) > 0.5)) or 
+                   (((abs(det_list[i][0]['ymin'] - det_list[j][0]['ymax']) <= 5 or abs(det_list[i][0]['ymax'] - det_list[j][0]['ymin']) <= 5)) and 
+                   ((det_list[i][0]['xmax']-det_list[j][0]['xmin'])/(det_list[j][0]['xmax']-det_list[j][0]['xmin']) > 0.5 and
+                    (det_list[j][0]['xmax']-det_list[i][0]['xmin'])/(det_list[i][0]['xmax']-det_list[i][0]['xmin']) > 0.5)))):
+                    #print(str(i)+"_"+str(j))
+                    #print(det_list[i][0])
+                    #print(det_list[j][0])
+                    cord =   [{'class': det_list[i][0]['class_id'],
+                               "id":None,
+                              'class_name': det_list[i][0]['class'],
+                              'score': det_list[i][0]['score'],
+                              'xmin': min(det_list[i][0]['xmin'], det_list[j][0]['xmin']),
+                              'ymin': min(det_list[i][0]['ymin'], det_list[j][0]['ymin']),
+                              'xmax': max(det_list[i][0]['xmax'], det_list[j][0]['xmax']),
+                              'ymax': max(det_list[i][0]['ymax'], det_list[j][0]['ymax']),
+                              'xmin_c': min(det_list[i][0]['xmin'], det_list[j][0]['xmin']/W),
+                              'ymin_c': min(det_list[i][0]['ymin'], det_list[j][0]['ymin']/H),
+                              'xmax_c': max(det_list[i][0]['xmax'], det_list[j][0]['xmax'])/W,
+                              'ymax_c': max(det_list[i][0]['ymax'], det_list[j][0]['ymin'])/H}]
+                    #print(cord)
+                    final_det.append(cord)
+                    clist_i.append(i)
+                    clist_i.append(j)
+        for i in range(0, len(det_list)):
+            if(i not in clist_i):
+                final_det.append(det_list[i])
+        return final_det
+    def split(self,frame,split_col,split_row,model):
+        swidth_col =  int(frame.shape[1]/split_col)
+        sheight_row =  int(frame.shape[0]/split_row)
+        det_list = []
+        h,w,_=frame.shape
+        for i in range(0, split_row):
+            for j in range(0, split_col):
+                sub_img = frame[i*sheight_row:(i+1)*sheight_row, j*swidth_col:(j+1)*swidth_col]
+                # cv2.imwrite("C:/Users/SridharBondla/Downloads/output/"+str(i)+"_"+str(j)+".jpg",sub_img)
+                res=model.predict(sub_img)
+                listres=self.mark_res(res, i*sheight_row, j*swidth_col, frame.shape[0], frame.shape[1])
+                if len(listres)>0:
+                    det_list.append(listres)
+        return sum(self.deduplication(det_list,h,w),[])
+                
+
+
 class InferenceModel:
     """
     Yolov8 inference
@@ -177,3 +255,178 @@ class InferenceModel:
                 print("no detections")
             print("listresult===",listresult)
             return listresult
+        
+    def mark_res(self,res,origin_y,origin_x,H,W):
+        listresult=[]
+        for i,det in enumerate(res[0].boxes):
+            print(det.data[0])
+            listresult.append({
+                "class": int(det.data[0][5].numpy()),
+                "id":None,
+                "class_name": self.model.names[int(det.data[0][5].numpy())],
+                "score":round(float(det.data[0][4].numpy()), 2),
+                "xmin": int(det.data[0][0].numpy()) + origin_x,
+                "ymin": int(det.data[0][1].numpy()) + origin_y,
+                "xmax": int(det.data[0][2].numpy()) + origin_x,
+                "ymax": int(det.data[0][3].numpy()) + origin_y,
+                "xmin_c": round((int(det.data[0][0].numpy()) + origin_x)/W,5),
+                "ymin_c": round((int(det.data[0][1].numpy()) + origin_y)/H,5),
+                "xmax_c": round((int(det.data[0][2].numpy()) + origin_x)/W,5),
+                "ymax_c": round((int(det.data[0][3].numpy()) + origin_y)/H,5),  
+
+            })
+        return listresult
+    def deduplication(self,det_list, h,w):
+        H = h
+        W = w
+        final_det = []
+        clist_i = []
+        for i in range(0, len(det_list)):
+            for j in range(i+1, len(det_list)):
+                if(i not in clist_i and (det_list[i][0]['class'] == det_list[j][0]['class']) and 
+                   (((abs(det_list[i][0]['xmin'] - det_list[j][0]['xmax']) <= 5 or abs(det_list[i][0]['xmax'] - det_list[j][0]['xmin']) <= 5) and 
+                   ((det_list[i][0]['ymax']-det_list[j][0]['ymin'])/(det_list[j][0]['ymax']-det_list[j][0]['ymin']) > 0.5 and
+                    (det_list[j][0]['ymax']-det_list[i][0]['ymin'])/(det_list[i][0]['ymax']-det_list[i][0]['ymin']) > 0.5)) or 
+                   (((abs(det_list[i][0]['ymin'] - det_list[j][0]['ymax']) <= 5 or abs(det_list[i][0]['ymax'] - det_list[j][0]['ymin']) <= 5)) and 
+                   ((det_list[i][0]['xmax']-det_list[j][0]['xmin'])/(det_list[j][0]['xmax']-det_list[j][0]['xmin']) > 0.5 and
+                    (det_list[j][0]['xmax']-det_list[i][0]['xmin'])/(det_list[i][0]['xmax']-det_list[i][0]['xmin']) > 0.5)))):
+                    #print(str(i)+"_"+str(j))
+                    #print(det_list[i][0])
+                    #print(det_list[j][0])
+                    cord =   [{'class': det_list[i][0]['class_id'],
+                               "id":None,
+                              'class_name': det_list[i][0]['class'],
+                              'score': det_list[i][0]['score'],
+                              'xmin': min(det_list[i][0]['xmin'], det_list[j][0]['xmin']),
+                              'ymin': min(det_list[i][0]['ymin'], det_list[j][0]['ymin']),
+                              'xmax': max(det_list[i][0]['xmax'], det_list[j][0]['xmax']),
+                              'ymax': max(det_list[i][0]['ymax'], det_list[j][0]['ymax']),
+                              'xmin_c': min(det_list[i][0]['xmin'], det_list[j][0]['xmin']/W),
+                              'ymin_c': min(det_list[i][0]['ymin'], det_list[j][0]['ymin']/H),
+                              'xmax_c': max(det_list[i][0]['xmax'], det_list[j][0]['xmax'])/W,
+                              'ymax_c': max(det_list[i][0]['ymax'], det_list[j][0]['ymin'])/H}]
+                    #print(cord)
+                    final_det.append(cord)
+                    clist_i.append(i)
+                    clist_i.append(j)
+        for i in range(0, len(det_list)):
+            if(i not in clist_i):
+                final_det.append(det_list[i])
+        return final_det
+    def split(self,frame,split_col,split_row,model):
+        print("===split_col,split_row==",split_col,split_row)
+        swidth_col =  int(frame.shape[1]/split_col)
+        sheight_row =  int(frame.shape[0]/split_row)
+        det_list = []
+        h,w,_=frame.shape
+        for i in range(0, split_row):
+            for j in range(0, split_col):
+                sub_img = frame[i*sheight_row:(i+1)*sheight_row, j*swidth_col:(j+1)*swidth_col]
+                # cv2.imwrite("C:/Users/SridharBondla/Downloads/output/"+str(i)+"_"+str(j)+".jpg",sub_img)
+                res=model.predict(sub_img)
+                listres=self.mark_res(res, i*sheight_row, j*swidth_col, frame.shape[0], frame.shape[1])
+                if len(listres)>0:
+                    det_list.append(listres)
+        return sum(self.deduplication(det_list,h,w),[])
+    
+        
+    def infer_v2(self, image, model_config=None, split_columns=1, split_rows=1):
+        """
+        This will do the detection on the image
+        Args:
+            image (array): image in numpy array
+            model_config (dict): configuration specific to camera group for detection
+        Returns:
+           results (list):  list of dictionary. It will have all the detection result.
+        """
+        # image_height, image_width, _ = image.shape
+        print("image shape====",image.shape)
+        print(split_columns,split_rows)
+        # raw_image = copy.deepcopy(image)
+        # img0 = copy.deepcopy(image)
+        img = copy.deepcopy(image)
+        print("model====>", self.model)
+        if model_config is not None:
+            self.isTrack = model_config['is_track']
+            self.object_confidence = model_config["conf_thres"]
+            self.iou_threshold = model_config["iou_thres"]
+            self.max_det = model_config["max_det"]
+            self.agnostic_nms = model_config["agnostic_nms"]
+            self.augment = model_config["augment"]
+            # self.classes=model_config["classes"]
+        
+        
+        listresult = self.split(img, split_columns, split_rows,self.model)
+        if len(listresult)==0:
+            print("no detections")
+        else:
+            print(listresult)
+        return listresult
+        
+        
+        
+        # if self.isTrack is False:
+        #     results = self.model.predict(img, conf=self.object_confidence,
+        #                                  iou=self.iou_threshold, boxes=True,classes=self.classes)
+        #     listresult=[]
+        #     for i,det in enumerate(results[0].boxes):
+        #         print(i,det.data[0])
+        #         listresult.append({
+        #             "class": int(det.data[0][5].numpy()),
+        #             "id": None,
+        #             "class_name": self.model.names[int(det.data[0][5].numpy())],
+        #             "score":round(float(det.data[0][4].numpy()), 2),
+        #             "xmin": int(det.data[0][0].numpy()),
+        #             "ymin": int(det.data[0][1].numpy()),
+        #             "xmax": int(det.data[0][2].numpy()),
+        #             "ymax": int(det.data[0][3].numpy()),
+        #             "xmin_c": round(float(det.xyxyn[0][0].numpy()),5),
+        #             "ymin_c": round(float(det.xyxyn[0][1].numpy()),5),
+        #             "xmax_c": round(float(det.xyxyn[0][2].numpy()),5),
+        #             "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),
+        #             })
+        #     print("listresult===",listresult)
+        #     return listresult
+        # if self.isTrack is True:
+        #     results = self.model.track(img, conf=self.object_confidence, iou=self.iou_threshold, boxes=True, classes=self.classes)
+        #     listresult=[]
+        #     print("*"*100)
+        #     print(results[0].boxes)
+        #     if len(results[0].boxes)>0:
+        #         for i,det in enumerate(results[0].boxes):
+        #             # print(det.data[0])
+        #             if det.id is not None:
+        #                 listresult.append({
+        #                     "class": int(det.data[0][6].numpy()),
+        #                     "id": int(det.id[0].numpy()),
+        #                     "class_name": self.model.names[int(det.data[0][6].numpy())],
+        #                     "score":round(float(det.data[0][5].numpy()), 2),
+        #                     "xmin": int(det.data[0][0].numpy()),
+        #                     "ymin": int(det.data[0][1].numpy()),
+        #                     "xmax": int(det.data[0][2].numpy()),
+        #                     "ymax": int(det.data[0][3].numpy()),
+        #                     "xmin_c": round(float(det.xyxyn[0][0].numpy()),5),
+        #                     "ymin_c": round(float(det.xyxyn[0][1].numpy()),5),
+        #                     "xmax_c": round(float(det.xyxyn[0][2].numpy()),5),
+        #                     "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),                        
+        #                 })
+        #             else:
+        #                 print("no ids")
+        #                 listresult.append({
+        #                     "class": int(det.data[0][5].numpy()),
+        #                     "id": None,
+        #                     "class_name": self.model.names[int(det.data[0][5].numpy())],
+        #                     "score":round(float(det.data[0][4].numpy()), 2),
+        #                     "xmin": int(det.data[0][0].numpy()),
+        #                     "ymin": int(det.data[0][1].numpy()),
+        #                     "xmax": int(det.data[0][2].numpy()),
+        #                     "ymax": int(det.data[0][3].numpy()),
+        #                     "xmin_c": round(float(det.xyxyn[0][0].numpy()),5),
+        #                     "ymin_c": round(float(det.xyxyn[0][1].numpy()),5),
+        #                     "xmax_c": round(float(det.xyxyn[0][2].numpy()),5),
+        #                     "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),
+        #                 })
+        #     else:
+        #         print("no detections")
+        #     print("listresult===",listresult)
+        #     return listresult

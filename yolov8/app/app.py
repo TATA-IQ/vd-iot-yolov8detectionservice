@@ -224,11 +224,23 @@ def detection(data: Image_Model):
         "model_type":data.model_type,
         "model_framework":data.model_framework,  
                  }
-
+    try:
+        if data.split_columns is not None:
+            split_columns = data.split_columns
+        else:
+            split_columns = 1            
+        if data.split_rows is not None:
+            split_rows = data.split_rows
+        else:
+            split_rows = 1            
+    except:
+        split_columns = 1
+        split_rows = 1
+        
     if data.model_config is None:
-        res = im.infer(image)
+        res = im.infer_v2(image,split_columns,split_rows)
     else:
-        res = im.infer(image, data.model_config)
+        res = im.infer_v2(image, data.model_config,split_columns,split_rows)
     print("======inference done**********")
     print(res)
     print(type(res))

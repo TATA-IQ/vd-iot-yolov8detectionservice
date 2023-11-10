@@ -15,5 +15,8 @@ class Image_Model(BaseModel):
     image_time: Union[str, None] = None
     model_type: Union[str, None] = None
     model_framework: Union[str, None] = None
+    split_columns: Union[int, None] = None
+    split_rows: Union[int, None] = None
+    
   
 
