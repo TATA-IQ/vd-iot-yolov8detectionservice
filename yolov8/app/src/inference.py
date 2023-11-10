@@ -1,10 +1,12 @@
+"""inference module"""
 import os
-import glob
+# import glob
 import copy
-import time
+import sys
+# import time
 
-import cv2
-import numpy as np
+# import cv2
+# import numpy as np
 import torch
 from ultralytics import YOLO
 
@@ -47,7 +49,8 @@ class InferenceModel:
         augment=False,
     ):
         """
-        This will initialize the model parameters of inference. This configuration is specific to camera group
+        This will initialize the model parameters of inference. 
+        This configuration is specific to camera group
         Args:
             conf (float): confidence of detection
             iou_threshold (float): intersection over union threshold of detection
@@ -93,12 +96,12 @@ class InferenceModel:
             image (array): image in numpy array
             model_config (dict): configuration specific to camera group for detection
         Returns:
-            list: list of dictionary. It will have all the detection result.
+           results (list):  list of dictionary. It will have all the detection result.
         """
-        image_height, image_width, _ = image.shape
+        # image_height, image_width, _ = image.shape
         print("image shape====",image.shape)
-        raw_image = copy.deepcopy(image)
-        img0 = copy.deepcopy(image)
+        # raw_image = copy.deepcopy(image)
+        # img0 = copy.deepcopy(image)
         img = copy.deepcopy(image)
         print("model====>", self.model)
         if model_config is not None:
@@ -109,13 +112,12 @@ class InferenceModel:
             self.agnostic_nms = model_config["agnostic_nms"]
             self.augment = model_config["augment"]
             # self.classes=model_config["classes"]
-        
-        if self.isTrack == False:
-
-            results = self.model.predict(img, conf=self.object_confidence, iou=self.iou_threshold, boxes=True, classes=self.classes)
+        if self.isTrack is False:
+            results = self.model.predict(img, conf=self.object_confidence,
+                                         iou=self.iou_threshold, boxes=True,classes=self.classes)
             listresult=[]
             for i,det in enumerate(results[0].boxes):
-                print(det.data[0])
+                print(i,det.data[0])
                 listresult.append({
                     "class": int(det.data[0][5].numpy()),
                     "id": None,
@@ -128,12 +130,11 @@ class InferenceModel:
                     "xmin_c": round(float(det.xyxyn[0][0].numpy()),5),
                     "ymin_c": round(float(det.xyxyn[0][1].numpy()),5),
                     "xmax_c": round(float(det.xyxyn[0][2].numpy()),5),
-                    "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),  
-                
-                })
+                    "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),
+                    })
             print("listresult===",listresult)
             return listresult
-        if self.isTrack == True:
+        if self.isTrack is True:
             results = self.model.track(img, conf=self.object_confidence, iou=self.iou_threshold, boxes=True, classes=self.classes)
             listresult=[]
             print("*"*100)
@@ -154,8 +155,7 @@ class InferenceModel:
                             "xmin_c": round(float(det.xyxyn[0][0].numpy()),5),
                             "ymin_c": round(float(det.xyxyn[0][1].numpy()),5),
                             "xmax_c": round(float(det.xyxyn[0][2].numpy()),5),
-                            "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),  
-                        
+                            "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),                        
                         })
                     else:
                         print("no ids")
@@ -171,8 +171,7 @@ class InferenceModel:
                             "xmin_c": round(float(det.xyxyn[0][0].numpy()),5),
                             "ymin_c": round(float(det.xyxyn[0][1].numpy()),5),
                             "xmax_c": round(float(det.xyxyn[0][2].numpy()),5),
-                            "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),  
-                        
+                            "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),
                         })
             else:
                 print("no detections")
