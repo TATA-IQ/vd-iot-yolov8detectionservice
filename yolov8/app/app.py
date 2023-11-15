@@ -1,29 +1,28 @@
-from src.inference import InferenceModel
-from sftpdownload.download import SFTPClient
-from src.configParser import Config
-from zipfile import ZipFile
-import cv2
-import subprocess
-import requests
-import time
-from urllib.parse import urlparse
+"""main module"""
 import os
 import socket
+# import subprocess
+# import time
+from urllib.parse import urlparse
+from zipfile import ZipFile
 
-from PIL import Image
 from io import BytesIO
-import io
-import base64
+from PIL import Image
+# import io
+# import base64
 
-
+# import cv2
+import requests
 from fastapi import FastAPI
 import uvicorn
 import torch
 import numpy as np
+
+from src.inference import InferenceModel
+from sftpdownload.download import SFTPClient
+from src.configParser import Config
 from querymodel.imageModel import Image_Model
 from utils_download.model_download import DownloadModel
-from src.inference import InferenceModel
-
 
 
 
@@ -34,11 +33,10 @@ class SetupModel():
 
     def __init__(self,config_path="config/config.yaml",model_config_path="config/model.yaml"):
         conf = Config.yamlconfig(config_path)[0]
-        modelconf=Config.yamlModel(model_config_path)[0]
+        self.modelconf=Config.yamlModel(model_config_path)[0]
         self.apis = conf["apis"]
         self.sftp = conf["sftp"]
         self.minio=conf["minio"]
-        self.modelconf=modelconf
 
 
     def get_local_ip(self):
@@ -50,7 +48,8 @@ class SetupModel():
             # doesn't even have to be reachable
             s.connect(("192.255.255.255", 1))
             IP = s.getsockname()[0]
-        except:
+        except Exception as e:
+            print(e)
             IP = "127.0.0.1"
         finally:
             s.close()
@@ -95,10 +94,11 @@ class SetupModel():
 
         print("downloading from server")
 
-        sf = SFTPClient(self.sftp["host"], self.sftp["port"], self.sftp["username"], self.sftp["password"])
+        sf = SFTPClient(self.sftp["host"], self.sftp["port"],
+                        self.sftp["username"],self.sftp["password"])
         sf.downloadyolov5(model_path, "model/test.zip")
         print("downloaded from server")
-        model_nm = model_path.split(".")[0]
+        # model_nm = model_path.split(".")[0]
         with ZipFile("model/test.zip", "r") as zObject:
             zObject.extractall(path="model/temp")
 
@@ -123,12 +123,11 @@ class SetupModel():
         ip = self.get_local_ip()
         url = (
             "http://"
-            + ip
+            + str(ip)
             + ":"
-            + self.modelconf["port"]
+            + str(self.modelconf["port"])
             + "/detect"
         )
-        
         model_id = self.modelconf["model_id"]
         print("updating for model id===>", model_id)
 
@@ -139,8 +138,9 @@ class SetupModel():
 
     def getModelConfig(self):
         '''
-        This function call the model configuration api
+        This function call the model configuration api        
         '''
+        model_id=self.modelconf["model_id"]
         model_config = requests.get(self.apis["model_config"], json={"model_id": model_id})
         return model_config
 
@@ -166,8 +166,7 @@ class SetupModel():
 
         return im,self.modelconf,model_name, framework
 
-
-st=SetupModel()    
+st=SetupModel()
 im,modelconf,model_name, framework=st.startModel()
 
 app = FastAPI()
@@ -176,12 +175,12 @@ def strToImage(imagestr):
     print("*"*100)
     stream = BytesIO(imagestr.encode("ISO-8859-1"))
     image = Image.open(stream).convert("RGB")
-    open_cv_image = np.array(image) 
+    open_cv_image = np.array(image)
     # decodedimage = base64.b64decode(str(imagestr))
     # img = Image.open(io.BytesIO(imgdata))
     # image= cv2.cvtColor(np.array(img), cv2.COLOR_BGR2RGB)
     # jpg_as_np = np.frombuffer(image_1, dtype=np.uint8)
-    # image = cv2.imdecode(jpg_as_np, flags=1) 
+    # image = cv2.imdecode(jpg_as_np, flags=1)
     # stream = BytesIO(imagestr.encode("ISO-8859-1"))
     # decodedimage = Image.open(stream).convert("RGBA")
     # decodedimage = np.array(decodedimage)
@@ -204,7 +203,8 @@ def test_fetch():
     '''
     Test Api: Just for testing if model is running
     '''
-    return {"status":"active","message":f"Model Name: {0} Framework {1}".format(model_name, framework) }
+    return {"status":"active",
+            "message":f"Model Name: {0} Framework {1}".format(model_name, framework) }
 
 
 @app.post("/detect")
@@ -220,8 +220,7 @@ def detection(data: Image_Model):
 
     final_res = {
         "image_name":data.image_name,
-        "camera_id":data.camera_id,
-        
+        "camera_id":data.camera_id,        
         "model_type":data.model_type,
         "model_framework":data.model_framework,  
                  }
@@ -243,7 +242,7 @@ def detection(data: Image_Model):
 
 
 @app.get("/classes")
-def detection():
+def get_classes():
     '''
     This function return all the classes of the model
     '''
