@@ -1,9 +1,4 @@
-sftp:
-  host: "172.16.0.171"
-  username: "aditya.singh"
-  port: 22
-  password: "Welcome#123"
-  path: "/models" 
+
 apis:
   container: "http://172.16.0.204:8051/container"
   container_model: "http://172.16.0.204:8051/containermodel"
