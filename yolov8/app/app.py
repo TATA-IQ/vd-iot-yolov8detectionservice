@@ -35,7 +35,7 @@ class SetupModel():
         conf = Config.yamlconfig(config_path)[0]
         self.modelconf=Config.yamlModel(model_config_path)[0]
         self.apis = conf["apis"]
-        self.sftp = conf["sftp"]
+        # self.sftp = conf["sftp"]
         self.minio=conf["minio"]
 
 
@@ -84,23 +84,23 @@ class SetupModel():
         # model_path = responseModel.json()["data"][0]["model_path"]
         # time.sleep(10)
 
-    def downloadSftp(self,model_path):
-        '''
-        This function will download the model from the server
+    # def downloadSftp(self,model_path):
+    #     '''
+    #     This function will download the model from the server
 
-        Args:
-            model_path (dict): sftp server connection configuration
-        '''
+    #     Args:
+    #         model_path (dict): sftp server connection configuration
+    #     '''
 
-        print("downloading from server")
+    #     print("downloading from server")
 
-        sf = SFTPClient(self.sftp["host"], self.sftp["port"],
-                        self.sftp["username"],self.sftp["password"])
-        sf.downloadyolov5(model_path, "model/test.zip")
-        print("downloaded from server")
-        # model_nm = model_path.split(".")[0]
-        with ZipFile("model/test.zip", "r") as zObject:
-            zObject.extractall(path="model/temp")
+    #     sf = SFTPClient(self.sftp["host"], self.sftp["port"],
+    #                     self.sftp["username"],self.sftp["password"])
+    #     sf.downloadyolov5(model_path, "model/test.zip")
+    #     print("downloaded from server")
+    #     # model_nm = model_path.split(".")[0]
+    #     with ZipFile("model/test.zip", "r") as zObject:
+    #         zObject.extractall(path="model/temp")
 
     def downloadMinio(self,modelmaster):
         '''
