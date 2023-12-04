@@ -1,0 +1,21 @@
+FROM python:3.9-slim@sha256:2b76740d0b7b94c299868555a14bf4e8a50e0cf74cd7b8c6136d4f4a10fb12bf as builder
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+RUN python -m venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -Ur requirements.txt
+
+FROM python:3.9-slim@sha256:2b76740d0b7b94c299868555a14bf4e8a50e0cf74cd7b8c6136d4f4a10fb12bf
+WORKDIR /app
+ENV PYTHONUNBUFFERED 1
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y ffmpeg libsm6 libxext6 redis
+COPY --from=builder /app/venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
+COPY app/ /app
+cmd ["python","app.py"]
+# CMD chmod +x run.sh
+# CMD ./run.sh
