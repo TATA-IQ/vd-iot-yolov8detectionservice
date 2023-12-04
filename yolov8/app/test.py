@@ -11,6 +11,7 @@ import io
 # vehicle_yolov8_url = "http://172.16.0.204:6500/classes/"
 # vehicle_yolov8_url = "http://172.16.0.204:6500/detect/"
 vehicle_yolov8_url = "http://172.16.0.178:6500/detect/"
+vehicle_yolov8_url = "http://172.16.0.178:7000/detect/"
 firesmoke_yolov8_url = "http://172.16.0.178:6501/detect/"
 crowd_yolov8_url = "http://172.16.0.178:6502/detect/"
 ppe_yolov8_url = "http://172.16.0.178:6503/detect/"
@@ -43,7 +44,7 @@ det_query = {
     'augment': False,
     
    },
-    "split_columns": 3,
+    "split_columns": 2,
     "split_rows": 2}
 
 r = requests.post(vehicle_yolov8_url, json=det_query)

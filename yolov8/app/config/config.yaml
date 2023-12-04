@@ -1,4 +1,3 @@
-
 apis:
   container: "http://172.16.0.204:8051/container"
   container_model: "http://172.16.0.204:8051/containermodel"
