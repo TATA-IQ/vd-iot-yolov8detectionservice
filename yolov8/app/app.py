@@ -12,11 +12,13 @@ from PIL import Image
 # import base64
 
 # import cv2
+import consul
 import requests
 from fastapi import FastAPI
 import uvicorn
 import torch
 import numpy as np
+import time
 
 from src.inference import InferenceModel
 from sftpdownload.download import SFTPClient
@@ -25,18 +27,125 @@ from querymodel.imageModel import Image_Model
 from utils_download.model_download import DownloadModel
 
 
+def get_local_ip():
+        '''
+        Get the ip of server
+        '''
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            # doesn't even have to be reachable
+            s.connect(("192.255.255.255", 1))
+            IP = s.getsockname()[0]
+        except:
+            IP = "127.0.0.1"
+        finally:
+            s.close()
+        return IP
+
+def register_service(consul_conf,port):
+    name=socket.gethostname()
+    # local_ip=socket.gethostbyname(socket.gethostname())
+    local_ip=get_local_ip()
+    consul_client = consul.Consul(host=consul_conf["host"],port=int(consul_conf["port"]))
+    consul_client.agent.service.register(
+    "yolov8validate",service_id=name+"-yolov8-"+consul_conf["env"],
+    port=int(port),
+    address=local_ip,
+    tags=["python","yolov8",consul_conf["env"]]
+)
+
+def get_service_address(consul_client,service_name,env):
+    while True:
+        
+        try:
+            print("===service_name===", service_name)
+            services=consul_client.catalog.service(service_name)[1]
+            print(services)
+            for i in services:
+                if env == i["ServiceID"].split("-")[-1]:
+                    return i
+        except Exception as ex:
+            print(ex)
+            time.sleep(10)
+            continue
+
+
+
+
+def get_confdata(consul_conf):
+    consul_client = consul.Consul(host=consul_conf["host"],port=consul_conf["port"])
+    pipelineconf=get_service_address(consul_client,"pipelineconfig",consul_conf["env"])
+
+    
+    
+    env=consul_conf["env"]
+    
+    endpoint_addr="http://"+pipelineconf["ServiceAddress"]+":"+str(pipelineconf["ServicePort"])
+    print("endpoint addr====",endpoint_addr)
+    while True:
+        
+        try:
+            res=requests.get(endpoint_addr+"/")
+            endpoints=res.json()
+            print("===got endpoints===",endpoints)
+            break
+        except Exception as ex:
+            print("endpoint exception==>",ex)
+            time.sleep(10)
+            continue
+    
+    while True:
+        try:
+            res=requests.get(endpoint_addr+endpoints["endpoint"]["model"])
+            modelconf=res.json()
+            print("modelconf===>",modelconf)
+            break
+            
+
+        except Exception as ex:
+            print("modelconf exception==>",ex)
+            time.sleep(10)
+            continue
+    print("=======searching for dbapi====")
+    while True:
+        try:
+            print("=====consul search====")
+            dbconf=get_service_address(consul_client,"dbapi",consul_conf["env"])
+            # print("****",dbconf)
+            dbhost=dbconf["ServiceAddress"]
+            dbport=dbconf["ServicePort"]
+            res=requests.get(endpoint_addr+endpoints["endpoint"]["dbapi"])
+            dbres=res.json()
+            print("===got db conf===")
+            print(dbres)
+            break
+        except Exception as ex:
+            print("db discovery exception===",ex)
+            time.sleep(10)
+            continue
+    for i in dbres["apis"]:
+        print("====>",i)
+        dbres["apis"][i]="http://"+dbhost+":"+str(dbport)+dbres["apis"][i]
+
+    
+    print("======dbres======")
+    print(dbres)
+    print(modelconf)
+    return  dbres,modelconf
+
 
 class SetupModel():
     '''
     Class to Setup the Inference Model
     '''
 
-    def __init__(self,config_path="config/config.yaml",model_config_path="config/model.yaml"):
-        conf = Config.yamlconfig(config_path)[0]
+    def __init__(self,config_path="config/config.yaml",model_config_path="config/model.yaml"):        
+        config = Config.yamlconfig(config_path)
+        dbapi,minio_conf=get_confdata(config[0]["consul"])
         self.modelconf=Config.yamlModel(model_config_path)[0]
-        self.apis = conf["apis"]
+        self.apis = dbapi["apis"]
         # self.sftp = conf["sftp"]
-        self.minio=conf["minio"]
+        self.minio=minio_conf["minio"]
 
 
     def get_local_ip(self):
@@ -171,31 +280,13 @@ im,modelconf,model_name, framework=st.startModel()
 
 app = FastAPI()
 
+
 def strToImage(imagestr):
     print("*"*100)
     stream = BytesIO(imagestr.encode("ISO-8859-1"))
     image = Image.open(stream).convert("RGB")
     open_cv_image = np.array(image)
-    # decodedimage = base64.b64decode(str(imagestr))
-    # img = Image.open(io.BytesIO(imgdata))
-    # image= cv2.cvtColor(np.array(img), cv2.COLOR_BGR2RGB)
-    # jpg_as_np = np.frombuffer(image_1, dtype=np.uint8)
-    # image = cv2.imdecode(jpg_as_np, flags=1)
-    # stream = BytesIO(imagestr.encode("ISO-8859-1"))
-    # decodedimage = Image.open(stream).convert("RGBA")
-    # decodedimage = np.array(decodedimage)
-    # # imagencode = imagestr.encode()
-    # # decodedimage = base64.b64decode(imagencode)
-    # nparr = np.frombuffer(decodedimage, np.uint8)
-    # img_np = cv2.imdecode(nparr, flags=1)
     return open_cv_image
-
-# def strToImage(imagestr):
-#     imagencode = imagestr.encode()
-#     decodedimage = base64.b64decode(imagencode)
-#     nparr = np.frombuffer(decodedimage, np.uint8)
-#     img_np = cv2.imdecode(nparr, flags=1)
-#     return img_np
 
 
 @app.get("/test")
@@ -264,6 +355,7 @@ def get_classes():
 
 if __name__ == "__main__":
     print("=====inside main************")
+    
     uvicorn.run(app, host="0.0.0.0", port=int(modelconf["port"]))
 
 
