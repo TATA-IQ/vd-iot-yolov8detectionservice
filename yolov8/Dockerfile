@@ -26,6 +26,8 @@ Run pip3 install protobuf==3.20.*
 Run pip3 install ipython
 Run pip3 install psutil
 Run pip3 install minio
+Run pip3 install python-consul
+Run pip3 install console-logging
 copy app /app
 WORKDIR /app
 # RUN mkdir /app/logs

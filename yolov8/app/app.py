@@ -20,12 +20,14 @@ import torch
 import numpy as np
 import time
 
+from sourcelogs.logger import create_rotating_log
 from src.inference import InferenceModel
 from sftpdownload.download import SFTPClient
 from src.configParser import Config
 from querymodel.imageModel import Image_Model
 from utils_download.model_download import DownloadModel
-
+from console_logging.console import Console
+console=Console()
 
 def get_local_ip():
         '''
@@ -87,10 +89,12 @@ def get_confdata(consul_conf):
         try:
             res=requests.get(endpoint_addr+"/")
             endpoints=res.json()
-            print("===got endpoints===",endpoints)
+            log.info(f"===got endpoints==={endpoints}")
+            console.info(f"===got endpoints==={endpoints}")
             break
         except Exception as ex:
-            print("endpoint exception==>",ex)
+            log.error("endpoint exception==>{ex}")
+            console.error("endpoint exception==>{ex}")
             time.sleep(10)
             continue
     
@@ -98,29 +102,33 @@ def get_confdata(consul_conf):
         try:
             res=requests.get(endpoint_addr+endpoints["endpoint"]["model"])
             modelconf=res.json()
-            print("modelconf===>",modelconf)
+            log.info(f"modelconf===>{modelconf}")
+            console.info(f"modelconf===>{modelconf}")
             break
             
 
         except Exception as ex:
-            print("modelconf exception==>",ex)
+            log.error(f"modelconf exception==>{ex}")
+            console.error(f"modelconf exception==>{ex}")
             time.sleep(10)
             continue
-    print("=======searching for dbapi====")
+    console.info("=======searching for dbapi====")
     while True:
         try:
-            print("=====consul search====")
+            log.info("=====consul search====")
+            console.info("=====consul search====")
             dbconf=get_service_address(consul_client,"dbapi",consul_conf["env"])
             # print("****",dbconf)
             dbhost=dbconf["ServiceAddress"]
             dbport=dbconf["ServicePort"]
             res=requests.get(endpoint_addr+endpoints["endpoint"]["dbapi"])
             dbres=res.json()
-            print("===got db conf===")
+            console.info(f"===got db conf==={ dbres}")
             print(dbres)
             break
         except Exception as ex:
-            print("db discovery exception===",ex)
+            log.error("db discovery exception==={0}".format(ex))
+            console.error("db discovery exception==={0}".format(ex))
             time.sleep(10)
             continue
     for i in dbres["apis"]:
@@ -129,8 +137,10 @@ def get_confdata(consul_conf):
 
     
     print("======dbres======")
-    print(dbres)
-    print(modelconf)
+    log.info(dbres)
+    log.info(modelconf)
+    console.info(dbres)
+    console.info(modelconf)
     return  dbres,modelconf
 
 
@@ -139,13 +149,14 @@ class SetupModel():
     Class to Setup the Inference Model
     '''
 
-    def __init__(self,config_path="config/config.yaml",model_config_path="config/model.yaml"):        
+    def __init__(self,config_path="config/config.yaml",model_config_path="config/model.yaml",logger):        
         config = Config.yamlconfig(config_path)
         dbapi,minio_conf=get_confdata(config[0]["consul"])
         self.modelconf=Config.yamlModel(model_config_path)[0]
         self.apis = dbapi["apis"]
         # self.sftp = conf["sftp"]
         self.minio=minio_conf["minio"]
+        self.log = logger
 
 
     def get_local_ip(self):
@@ -187,8 +198,10 @@ class SetupModel():
         modelmaster = requests.get(
             self.apis["model_master_config"], json={"model_id": self.modelconf["model_id"]}
         ).json()
-        print("======Model Master Response======")
-        print(modelmaster)
+        console.info("======Model Master Response======")
+        self.log.info("======Model Master Response======")
+        console.info(modelmaster)
+        self.log.info(modelmaster)
         return modelmaster['data']
         # model_path = responseModel.json()["data"][0]["model_path"]
         # time.sleep(10)
@@ -217,7 +230,7 @@ class SetupModel():
             modelmaster (dict): configuration to connect with minio
         '''
         local_path="model"
-        yolodownload = DownloadModel("models", self.minio)
+        yolodownload = DownloadModel("models", self.minio, self.log)
         yolodownload.createLocalFolder(local_path)
         yolodownload.save_data(modelmaster["model_path"], local_path)
         # downloadData(data.model_path,local_path)
@@ -267,22 +280,22 @@ class SetupModel():
             gpu = True
 
         model_list = os.listdir("model/")
-        im = InferenceModel(model_path="model/" + model_list[0], gpu=gpu)
+        im = InferenceModel(model_path="model/" + model_list[0], gpu=gpu,self.log)
         im.loadmodel()
-        print("====Model Loaded====")
-        print("Running api on GPU {}".format(gpu))
+        console.info("====Model Loaded====")
+        console.info("Running api on GPU {}".format(gpu))
+        self.log.info("Running api on GPU {}".format(gpu))
         self.createIP()
 
         return im,self.modelconf,model_name, framework
 
-st=SetupModel()
+st=SetupModel(log)
 im,modelconf,model_name, framework=st.startModel()
 
 app = FastAPI()
 
 
 def strToImage(imagestr):
-    print("*"*100)
     stream = BytesIO(imagestr.encode("ISO-8859-1"))
     image = Image.open(stream).convert("RGB")
     open_cv_image = np.array(image)
@@ -329,12 +342,14 @@ def detection(data: Image_Model):
         split_rows = 1
         
     if data.model_config is None:
-        res = im.infer_v2(image,split_columns,split_rows)
+        res = im.infer_v2(image, split_columns, split_rows)
     else:
         res = im.infer_v2(image, data.model_config,split_columns,split_rows)
-    print("======inference done**********")
-    print(res)
-    print(type(res))
+    console.info("======inference done**********")
+    log.info("======inference done**********")
+    log.info(res)
+    console.info(res)
+    log.info(type(res))
     if len(res)>0:
         final_res['resultflag']="yes"
     else:
@@ -354,7 +369,9 @@ def get_classes():
 
 
 if __name__ == "__main__":
-    print("=====inside main************")
+    log = create_rotating_log("logs/logs.log")
+    console.info("=====inside main************")
+    log.info("=====inside main************")
     
     uvicorn.run(app, host="0.0.0.0", port=int(modelconf["port"]))
 

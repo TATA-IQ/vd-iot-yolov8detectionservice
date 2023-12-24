@@ -4,6 +4,8 @@ import shutil
 from zipfile import ZipFile
 from minio import Minio
 from minio.error import S3Error
+from console_logging.console import Console
+console=Console()
 # import urllib3
 # import cv2
 # import numpy as np
@@ -15,11 +17,12 @@ class DownloadModel:
     Class to download model from miniodb and remove it after validation is done.
     """
 
-    def __init__(self, bucket_name, minioconf):
+    def __init__(self, bucket_name, minioconf, logger):
         """
         args: bucket_name-> Bucket name of miniodb
         """
         self.bucket_name = bucket_name
+        self.log = logger
         self.client = Minio(
             endpoint=minioconf["endpoint"],
             access_key=minioconf["access_key"],
@@ -34,16 +37,20 @@ class DownloadModel:
             object_name (str): full path of file from miniodb
             local_path (str): path to save the model locally
         """
-        print(object_name)
         obj_name = object_name.split("/")[-1]
-        print(obj_name)
+        print(object_name)
+        self.log.info(f"obj_name {obj_name}")
+        console.info(f"obj_name {obj_name}")
         save_path = os.path.join(local_path, obj_name)
         try:
             self.client.fget_object(self.bucket_name, object_name, save_path)
             print(f"{object_name} is saved into {save_path}")
-        except S3Error as expection:
-            print(expection)
-            print(f"{object_name} {expection.message} ")
+            self.log.info(f"{object_path} is saved into {save_path}")
+            console.info(f"{object_path} is saved into {save_path}")
+        except S3Error as exp:
+            print(f"{object_path} {exp.message} ")
+            self.log.info(f"expection raised, no buckets {exp} i.e., for path {object_path}")
+            console.info(f"expection raised, no buckets {exp} i.e., for path {object_path}")
 
     # def save_model_files(self, object_path, local_path):
     #     """
@@ -69,7 +76,8 @@ class DownloadModel:
             unzippath (str): path to unzip the downloaded model
             modelname (str): name of the model
         """
-        print("Zip path===>", path, modelname)
+        self.log.info(f"zip path===>{path}")
+        console.info(f"zip path===>{path}")
         with ZipFile(path, "r") as zObject:
             zObject.extractall(path=unzippath)
         os.remove(path)

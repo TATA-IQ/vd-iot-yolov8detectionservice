@@ -10,6 +10,9 @@ import sys
 import torch
 from ultralytics import YOLO
 
+from console_logging.console import Console
+console=Console()
+
 
 class ImageSplit():
     def __init__(self):
@@ -93,7 +96,7 @@ class InferenceModel:
     """
     Yolov8 inference
     """
-    def __init__(self, model_path=None, gpu=False):
+    def __init__(self, model_path=None, gpu=False, logger=None):
         """
         Initialize Yolov8 inference
         
@@ -115,6 +118,7 @@ class InferenceModel:
         self.max_det = 1000
         self.half = False
         self.isTrack = False
+        self.log = logger
 
     def initializeVariable(
         self,
@@ -151,7 +155,8 @@ class InferenceModel:
         if os.path.exists(self.model_path):
             self.model = YOLO(self.model_path)
         else:
-            print("MODEL NOT FOUND")
+            self.log.error("MODEL NOT FOUND")
+            console.error("MODEL NOT FOUND")
             sys.exit()
         # self.stride = int(self.model.stride.max())
         self.names = (
@@ -177,11 +182,13 @@ class InferenceModel:
            results (list):  list of dictionary. It will have all the detection result.
         """
         # image_height, image_width, _ = image.shape
-        print("image shape====",image.shape)
+        print("image shape====", image.shape)
+        self.log.info(f"image shape===={image.shape}")
+        console.info(f"image shape===={image.shape}")
         # raw_image = copy.deepcopy(image)
         # img0 = copy.deepcopy(image)
         img = copy.deepcopy(image)
-        print("model====>", self.model)
+        # print("model====>", self.model)
         if model_config is not None:
             self.isTrack = model_config['is_track']
             self.object_confidence = model_config["conf_thres"]
@@ -211,12 +218,14 @@ class InferenceModel:
                     "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),
                     })
             print("listresult===",listresult)
+            self.log.info("listresult===",listresult)
+            console.info(f"listresult==={listresult}")
             return listresult
         if self.isTrack is True:
             results = self.model.track(img, conf=self.object_confidence, iou=self.iou_threshold, boxes=True, classes=self.classes)
             listresult=[]
-            print("*"*100)
-            print(results[0].boxes)
+            # print("*"*100)
+            # self.(results[0].boxes)
             if len(results[0].boxes)>0:
                 for i,det in enumerate(results[0].boxes):
                     # print(det.data[0])
@@ -236,7 +245,8 @@ class InferenceModel:
                             "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),                        
                         })
                     else:
-                        print("no ids")
+                        self.log.info("no ids")
+                        console.info("no ids")
                         listresult.append({
                             "class": int(det.data[0][5].numpy()),
                             "id": None,
@@ -252,14 +262,16 @@ class InferenceModel:
                             "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),
                         })
             else:
-                print("no detections")
-            print("listresult===",listresult)
+                self.log.info("no detections")
+                console.info("no detections")
+            self.log.info("listresult===",listresult)
+            console.info("listresult===",listresult)
             return listresult
         
     def mark_res(self,res,origin_y,origin_x,H,W):
         listresult=[]
         for i,det in enumerate(res[0].boxes):
-            print(det.data[0])
+            # print(det.data[0])
             listresult.append({
                 "class": int(det.data[0][5].numpy()),
                 "id":None,
@@ -314,7 +326,9 @@ class InferenceModel:
                 final_det.append(det_list[i])
         return final_det
     def split(self,frame,split_col,split_row,model):
-        print("===split_col,split_row==",split_col,split_row)
+        print(f"===split_col,split_row=={split_col},{split_row}")
+        self.log.info(f"===split_col,split_row=={split_col},{split_row}")
+        console.info(f"===split_col,split_row=={split_col},{split_row}")
         swidth_col =  int(frame.shape[1]/split_col)
         sheight_row =  int(frame.shape[0]/split_row)
         det_list = []
@@ -340,12 +354,14 @@ class InferenceModel:
            results (list):  list of dictionary. It will have all the detection result.
         """
         # image_height, image_width, _ = image.shape
-        print("image shape====",image.shape)
-        print(split_columns,split_rows)
+        print("image shape====", image.shape)
+        self.log.info(f"image shape===={image.shape}")
+        console.info(f"image shape===={image.shape}")
+        self.log.info(split_columns,split_rows)
         # raw_image = copy.deepcopy(image)
         # img0 = copy.deepcopy(image)
         img = copy.deepcopy(image)
-        print("model====>", self.model)
+        # print("model====>", self.model)
         if model_config is not None:
             self.isTrack = model_config['is_track']
             self.object_confidence = model_config["conf_thres"]
@@ -358,9 +374,11 @@ class InferenceModel:
         
         listresult = self.split(img, split_columns, split_rows,self.model)
         if len(listresult)==0:
-            print("no detections")
+            self.log.info("no detections")
+            console.info("no detections")
         else:
-            print(listresult)
+            console.info("detections")
+            self.log.info(listresult)
         return listresult
         
         
