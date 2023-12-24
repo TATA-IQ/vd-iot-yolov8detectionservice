@@ -149,7 +149,7 @@ class SetupModel():
     Class to Setup the Inference Model
     '''
 
-    def __init__(self,config_path="config/config.yaml",model_config_path="config/model.yaml",logger):        
+    def __init__(self,config_path="config/config.yaml",model_config_path="config/model.yaml", logger = log):        
         config = Config.yamlconfig(config_path)
         dbapi,minio_conf=get_confdata(config[0]["consul"])
         self.modelconf=Config.yamlModel(model_config_path)[0]
@@ -280,7 +280,7 @@ class SetupModel():
             gpu = True
 
         model_list = os.listdir("model/")
-        im = InferenceModel(model_path="model/" + model_list[0], gpu=gpu,self.log)
+        im = InferenceModel(model_path="model/" + model_list[0], gpu=gpu,logger = self.log)
         im.loadmodel()
         console.info("====Model Loaded====")
         console.info("Running api on GPU {}".format(gpu))
