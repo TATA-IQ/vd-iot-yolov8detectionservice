@@ -38,19 +38,18 @@ class DownloadModel:
             local_path (str): path to save the model locally
         """
         obj_name = object_name.split("/")[-1]
-        print(object_name)
         self.log.info(f"obj_name {obj_name}")
         console.info(f"obj_name {obj_name}")
         save_path = os.path.join(local_path, obj_name)
         try:
             self.client.fget_object(self.bucket_name, object_name, save_path)
             print(f"{object_name} is saved into {save_path}")
-            self.log.info(f"{object_path} is saved into {save_path}")
-            console.info(f"{object_path} is saved into {save_path}")
+            self.log.info(f"{object_name} is saved into {save_path}")
+            console.info(f"{object_name} is saved into {save_path}")
         except S3Error as exp:
-            print(f"{object_path} {exp.message} ")
-            self.log.info(f"expection raised, no buckets {exp} i.e., for path {object_path}")
-            console.info(f"expection raised, no buckets {exp} i.e., for path {object_path}")
+            print(f"{object_name} {exp.message} ")
+            self.log.info(f"expection raised, no buckets {exp} i.e., for path {object_name}")
+            console.info(f"expection raised, no buckets {exp} i.e., for path {object_name}")
 
     # def save_model_files(self, object_path, local_path):
     #     """

@@ -232,7 +232,7 @@ class SetupModel():
             modelmaster (dict): configuration to connect with minio
         '''
         local_path="model"
-        yolodownload = DownloadModel("models", self.minio, self.log)
+        yolodownload = DownloadModel("models", self.minio, logger = self.log)
         yolodownload.createLocalFolder(local_path)
         yolodownload.save_data(modelmaster["model_path"], local_path)
         # downloadData(data.model_path,local_path)
@@ -291,7 +291,7 @@ class SetupModel():
 
         return im,self.modelconf,model_name, framework
 
-st=SetupModel(log)
+st=SetupModel(logger=log)
 im,modelconf,model_name, framework=st.startModel()
 
 app = FastAPI()
