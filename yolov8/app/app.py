@@ -28,6 +28,8 @@ from querymodel.imageModel import Image_Model
 from utils_download.model_download import DownloadModel
 from console_logging.console import Console
 console=Console()
+os.makedirs(logs, exist_ok=True)
+log = create_rotating_log("logs/logs.log")
 
 def get_local_ip():
         '''
@@ -149,7 +151,7 @@ class SetupModel():
     Class to Setup the Inference Model
     '''
 
-    def __init__(self,config_path="config/config.yaml",model_config_path="config/model.yaml", logger = log):        
+    def __init__(self,config_path="config/config.yaml",model_config_path="config/model.yaml",logger = log):        
         config = Config.yamlconfig(config_path)
         dbapi,minio_conf=get_confdata(config[0]["consul"])
         self.modelconf=Config.yamlModel(model_config_path)[0]
@@ -369,7 +371,7 @@ def get_classes():
 
 
 if __name__ == "__main__":
-    log = create_rotating_log("logs/logs.log")
+    
     console.info("=====inside main************")
     log.info("=====inside main************")
     
