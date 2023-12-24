@@ -28,7 +28,7 @@ from querymodel.imageModel import Image_Model
 from utils_download.model_download import DownloadModel
 from console_logging.console import Console
 console=Console()
-os.makedirs(logs, exist_ok=True)
+os.makedirs("logs", exist_ok=True)
 log = create_rotating_log("logs/logs.log")
 
 def get_local_ip():
