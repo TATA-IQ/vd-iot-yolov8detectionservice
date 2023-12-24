@@ -95,8 +95,8 @@ def get_confdata(consul_conf):
             console.info(f"===got endpoints==={endpoints}")
             break
         except Exception as ex:
-            log.error("endpoint exception==>{ex}")
-            console.error("endpoint exception==>{ex}")
+            log.error(f"endpoint exception==>{ex}")
+            console.error(f"endpoint exception==>{ex}")
             time.sleep(10)
             continue
     
