@@ -138,7 +138,7 @@ def get_confdata(consul_conf):
         dbres["apis"][i]="http://"+dbhost+":"+str(dbport)+dbres["apis"][i]
 
     
-    print("======dbres======")
+    console.info("======dbres======")
     log.info(dbres)
     log.info(modelconf)
     console.info(dbres)
