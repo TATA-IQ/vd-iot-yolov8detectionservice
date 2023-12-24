@@ -200,10 +200,8 @@ class SetupModel():
         modelmaster = requests.get(
             self.apis["model_master_config"], json={"model_id": self.modelconf["model_id"]}
         ).json()
-        console.info("======Model Master Response======")
-        self.log.info("======Model Master Response======")
-        console.info(modelmaster)
-        self.log.info(modelmaster)
+        console.info(f"======Model Master Response======{modelmaster}")
+        self.log.info(f"======Model Master Response======{modelmaster}")
         return modelmaster['data']
         # model_path = responseModel.json()["data"][0]["model_path"]
         # time.sleep(10)
