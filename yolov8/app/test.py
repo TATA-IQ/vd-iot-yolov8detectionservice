@@ -11,7 +11,7 @@ import io
 # vehicle_yolov8_url = "http://172.16.0.204:6500/classes/"
 # vehicle_yolov8_url = "http://172.16.0.204:6500/detect/"
 vehicle_yolov8_url = "http://172.16.0.178:6500/detect/"
-vehicle_yolov8_url = "http://172.16.0.178:7000/detect/"
+vehicle_yolov8_url = "http://172.16.0.205:7000/detect/"
 firesmoke_yolov8_url = "http://172.16.0.178:6501/detect/"
 crowd_yolov8_url = "http://172.16.0.178:6502/detect/"
 ppe_yolov8_url = "http://172.16.0.178:6503/detect/"
@@ -57,7 +57,7 @@ print(len(detections))
 if len(detections)>0:
     for a,i in enumerate(detections):
         img1 = cv2.rectangle(img,(i['xmin'],i['ymin']),(i["xmax"],i["ymax"]),(255,255,0),2)
-        cv2.putText(img, i["class_name"], (i['xmin'],i['ymin']), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 1)
-    cv2.imwrite("output/"+str(i["class_name"])+"_"+str(a)+".jpg",img1)
+        # cv2.putText(img, i["class_name"], (i['xmin'],i['ymin']), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 1)
+    # cv2.imwrite("output/"+str(i["class_name"])+"_"+str(a)+".jpg",img1)
 else:
     print("no detections")
