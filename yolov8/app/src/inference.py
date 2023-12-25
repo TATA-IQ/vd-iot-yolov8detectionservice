@@ -218,7 +218,7 @@ class InferenceModel:
                     "ymax_c": round(float(det.xyxyn[0][3].numpy()),5),
                     })
             print("listresult===",listresult)
-            self.log.info("listresult===",listresult)
+            self.log.info(f"listresult==={listresult}")
             console.info(f"listresult==={listresult}")
             return listresult
         if self.isTrack is True:
@@ -264,8 +264,8 @@ class InferenceModel:
             else:
                 self.log.info("no detections")
                 console.info("no detections")
-            self.log.info("listresult===",listresult)
-            console.info("listresult===",listresult)
+            self.log.info(f"listresult==={listresult}")
+            console.info(f"listresult==={listresult}")
             return listresult
         
     def mark_res(self,res,origin_y,origin_x,H,W):
